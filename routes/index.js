@@ -4,7 +4,7 @@
  */
 
 exports.index = function(req, res){
-  res.render('index', { title: 'YunYun' });
+  res.render('index', { title: 'YunYun', user: 'testUser'});
 };
 
 exports.yunyun = function(req, res){
