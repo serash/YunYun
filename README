@@ -1,8 +1,14 @@
 yunyun
 ======================
-
+### INTRODUCTION ####
 Website with Golang for adding kanji/hanzi to an SRS system for vocabulary practice
 
+#### INSTALL ####
+Need Golang installed on the server 
+fetch bcrypt with 
+> go get code.google.com/p/go.crypto/bcrypt
+
+#### EXTRA ####
 go website tutorial:
 http://golang.org/doc/articles/wiki/
 
@@ -11,3 +17,6 @@ http://alias.io/2010/01/store-passwords-safely-with-php-and-mysql/
 
 bcrpyt for go:
 http://godoc.org/code.google.com/p/go.crypto/bcrypt
+
+example sql query:
+https://github.com/go-sql-driver/mysql/wiki/Examples

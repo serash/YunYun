@@ -5,6 +5,8 @@
 package main
 
 import (
+  "database/sql"
+  _ "github.com/go-sql-driver/mysql"
   "fmt"
 	"flag"
 	"html/template"
@@ -15,33 +17,57 @@ import (
 	"regexp"
   "code.google.com/p/go.crypto/bcrypt"
 )
-
-var (
-	addr = flag.Bool("addr", false, "find open address and print to final-port.txt")
+/*
+ * Constants definitions
+ */
+const (
+    DB_HOST = "tcp(127.0.0.1:3306)"
+    DB_NAME = "yunyun"
+    DB_USER = "yunyun"
+    DB_PASS = "nuynuy"
 )
-
+/*
+ * Type definitions
+ */
 type Page struct {
 	Title string
 	Body  []byte
 }
+type User struct {
+  user string
+  pwHash string
+}
+type DateTime struct {
+  year int
+  month int
+  day int
+  hour int
+  min int
+  sec int
+}
+type Kotoba struct {
+  kotoba string
+  imi string
+  level int
+  review DateTime  
+}
 
+/*
+ * define variables
+ */
+var (
+	addr = flag.Bool("addr", false, "find open address and print to final-port.txt")
+)
+var templates = template.Must(template.ParseFiles("edit.html", "account.html", "login.html"))
+var validPath = regexp.MustCompile("^/(edit|save|account|login)/?([a-zA-Z0-9]*)$")
+
+/* 
+ * test functions
+ */
 func (p *Page) save() error {
 	filename := p.Title + ".txt"
 	return ioutil.WriteFile(filename, p.Body, 0600)
 }
-
-func clear(b []byte) {
-    for i := 0; i < len(b); i++ {
-        b[i] = 0;
-    }
-}
-
-func Crypt(password []byte, salt []byte) ([]byte, error) {
-    defer clear(password)
-    return bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
-}
-
-
 func loadPage(title string) (*Page, error) {
 	filename := title + ".txt"
 	body, err := ioutil.ReadFile(filename)
@@ -51,45 +77,15 @@ func loadPage(title string) (*Page, error) {
 	return &Page{Title: title, Body: body}, nil
 }
 
-func viewHandler(w http.ResponseWriter, r *http.Request, title string) {
-	p, err := loadPage(title)
-	if err != nil {
-		http.Redirect(w, r, "/edit/"+title, http.StatusFound)
-		return
-	}
-	renderTemplate(w, "view", p)
-}
-
-func editHandler(w http.ResponseWriter, r *http.Request, title string) {
-	p, err := loadPage(title)
-	if err != nil {
-		p = &Page{Title: title}
-	}
-	renderTemplate(w, "edit", p)
-}
-
-func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
-	body := r.FormValue("body")
-	p := &Page{Title: title, Body: []byte(body)}
-	err := p.save()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	http.Redirect(w, r, "/view/"+title, http.StatusFound)
-}
-
-var templates = template.Must(template.ParseFiles("edit.html", "view.html"))
-
+/* 
+ * webservice functions
+ */
 func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
 	err := templates.ExecuteTemplate(w, tmpl+".html", p)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
-
-var validPath = regexp.MustCompile("^/(edit|save|view)/([a-zA-Z0-9]+)$")
-
 func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		m := validPath.FindStringSubmatch(r.URL.Path)
@@ -100,20 +96,167 @@ func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.Handl
 		fn(w, r, m[2])
 	}
 }
+func accountHandler(w http.ResponseWriter, r *http.Request, title string) {
+	p, err := loadPage(title)
+	if err != nil {
+		p = &Page{Title: title}
+	}
+	renderTemplate(w, "account", p)
+}
+func editHandler(w http.ResponseWriter, r *http.Request, title string) {
+	p, err := loadPage(title)
+	if err != nil {
+		p = &Page{Title: title}
+	}
+	renderTemplate(w, "login", p)
+}
+func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
+	body := r.FormValue("body")
+	p := &Page{Title: title, Body: []byte(body)}
+	err := p.save()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/view/"+title, http.StatusFound)
+}
+func loginHandler(w http.ResponseWriter, r *http.Request, title string) {
+  user := r.FormValue("user")
+  pass := r.FormValue("pass")
+  //fmt.Println("user: " + user)
+  //fmt.Println("pass: " + pass)
+  err := loginUser(user, pass)
+	if err != nil {
+		//http.Error(w, err.Error(), http.StatusInternalServerError)
+	  http.Redirect(w, r, "/edit/" + user, http.StatusFound)
+		return
+	}
+	http.Redirect(w, r, "/account/" + user, http.StatusFound)
+}
 
-func main() {
-  pass := []byte("test")
-  salt := []byte("test")
-  ctext, err := Crypt(pass, salt)
+/* 
+ * database functions
+ */
+func printRows(rows *sql.Rows) {
+  cols, _ := rows.Columns()
+  n := len(cols)
   
+  for i := 0; i < n; i++ {
+    fmt.Print(cols[i], "\t")
+  }
+  fmt.Println()
+  
+  var fields []interface{}
+  for i := 0; i < n; i++ {
+    fields = append(fields, new(string))
+  }
+  for rows.Next() {
+    rows.Scan(fields...)
+    for i := 0; i < n; i++ {
+      fmt.Print(*(fields[i].(*string)), "\t")
+    }
+    fmt.Println()
+  }
+  fmt.Println()
+}
+func printTable(table string) {
+  dsn := DB_USER + ":" + DB_PASS + "@" + DB_HOST + "/" + DB_NAME + "?charset=utf8"
+  db, err := sql.Open("mysql", dsn)
   if err != nil {
-      log.Fatal(err)
-  }  
-  fmt.Println(string(ctext))
-	flag.Parse()
-	http.HandleFunc("/view/", makeHandler(viewHandler))
+     panic(err.Error())
+  }
+  defer db.Close()
+  err = db.Ping()
+  if err != nil {
+      panic(err.Error()) // proper error handling instead of panic in your app
+  }
+  rows, err := db.Query("SELECT * FROM " + table);
+  if err != nil {
+    panic(err.Error()) // proper error handling instead of panic in your app
+  }
+  printRows(rows)
+}
+ 
+
+/* 
+ * user functions
+ */
+func clear(b []byte) {
+    for i := 0; i < len(b); i++ {
+        b[i] = 0;
+    }
+}
+func Crypt(password []byte) ([]byte, error) {
+    defer clear(password)
+    return bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
+}
+func addUser(user string, pass string) (error) {
+  // get database
+  dsn := DB_USER + ":" + DB_PASS + "@" + DB_HOST + "/" + DB_NAME + "?charset=utf8"
+  db, err := sql.Open("mysql", dsn)
+  if err != nil {
+     panic(err.Error())
+  }
+  defer db.Close()
+  err = db.Ping()
+  if err != nil {
+      panic(err.Error()) // proper error handling instead of panic in your app
+  }
+  // insert user
+  pwHash, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
+  if err != nil {
+      panic(err.Error()) // proper error handling instead of panic in your app
+  }
+  _, err = db.Exec("INSERT INTO users(user, pw_hash) VALUES(?, ?)", user, pwHash)
+  return err
+}
+func loginUser(user string, pass string) (error)  { 
+  // get database
+  dsn := DB_USER + ":" + DB_PASS + "@" + DB_HOST + "/" + DB_NAME + "?charset=utf8"
+  db, err := sql.Open("mysql", dsn)
+  if err != nil {
+     panic(err.Error())
+  }
+  defer db.Close()
+  err = db.Ping()
+  if err != nil {
+      panic(err.Error()) // proper error handling instead of panic in your app
+  }
+  // query user
+  var pwHash string
+  err = db.QueryRow("SELECT pw_hash FROM users WHERE user = ?", user).Scan(&pwHash)
+  switch {
+    case err == sql.ErrNoRows:
+      log.Printf("No user found.")
+    case err != nil:
+            log.Fatal(err)
+  }
+  return bcrypt.CompareHashAndPassword([]byte(pwHash), []byte(pass))
+}
+
+/* 
+ * kotoba functions
+ */
+
+
+/*
+ * Main function
+ */
+func main() {
+  //printTable("users")
+  //printTable("kotoba")
+  //err := addUser(user, pass)
+  //err := loginUser(user, pass)
+  //if err != nil {
+  //  fmt.Println(err.Error());
+  //}
+
+  
+  flag.Parse()
+	http.HandleFunc("/account/", makeHandler(accountHandler))
 	http.HandleFunc("/edit/", makeHandler(editHandler))
 	http.HandleFunc("/save/", makeHandler(saveHandler))
+	http.HandleFunc("/login", makeHandler(loginHandler))
 
 	if *addr {
 		l, err := net.Listen("tcp", "127.0.0.1:0")
