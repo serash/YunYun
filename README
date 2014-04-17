@@ -1,0 +1,13 @@
+yunyun
+======================
+
+Website with Golang for adding kanji/hanzi to an SRS system for vocabulary practice
+
+go website tutorial:
+http://golang.org/doc/articles/wiki/
+
+save user password:
+http://alias.io/2010/01/store-passwords-safely-with-php-and-mysql/
+
+bcrpyt for go:
+http://godoc.org/code.google.com/p/go.crypto/bcrypt
