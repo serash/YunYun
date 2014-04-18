@@ -8,6 +8,11 @@ Need Golang installed on the server
 fetch bcrypt with 
 > go get code.google.com/p/go.crypto/bcrypt
 
+#### TODO ####
+- cleanup unnecessary files
+- example page of kotoba
+- how to check if user is logged in -> json webtoken
+
 #### EXTRA ####
 go website tutorial:
 http://golang.org/doc/articles/wiki/
@@ -20,3 +25,6 @@ http://godoc.org/code.google.com/p/go.crypto/bcrypt
 
 example sql query:
 https://github.com/go-sql-driver/mysql/wiki/Examples
+
+json webtoken:
+https://github.com/dgrijalva/jwt-go
