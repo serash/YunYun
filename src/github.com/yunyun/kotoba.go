@@ -1,4 +1,4 @@
-package yunyun-utils
+package utils
 
 /*
  * Type definitions

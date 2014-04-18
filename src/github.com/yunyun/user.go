@@ -1,4 +1,11 @@
-package yunyun-utils
+package utils
+
+import (
+  "log"
+  "database/sql"
+  _ "github.com/go-sql-driver/mysql"
+  "code.google.com/p/go.crypto/bcrypt"
+)
 
 /*
  * Type definitions

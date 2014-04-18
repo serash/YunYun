@@ -1,4 +1,10 @@
-package yunyun-utils
+package utils
+
+import (
+  "fmt"
+  "database/sql"
+  _ "github.com/go-sql-driver/mysql"
+)
 
 /*
  * Constants definitions
