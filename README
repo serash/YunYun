@@ -4,9 +4,12 @@ yunyun
 Website with Golang for adding kanji/hanzi to an SRS system for vocabulary practice
 
 #### INSTALL ####
-Need Golang installed on the server 
-fetch bcrypt with 
+make $GOPATH point to the current folder with the src directory
 > go get code.google.com/p/go.crypto/bcrypt
+> go get github.com/go-sql-driver/mysql
+> go get github.com/dgrijalva/jwt-go
+> go install github.com/yunyun
+run the program from the bin folder, where the webpages are!
 
 #### TODO ####
 - cleanup unnecessary files
