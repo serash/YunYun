@@ -30,7 +30,7 @@ const (
  * Type definitions
  */
 type Page struct {
-	Title string
+	User string
 	Body  []byte
 }
 type User struct {
@@ -58,14 +58,14 @@ type Kotoba struct {
 var (
 	addr = flag.Bool("addr", false, "find open address and print to final-port.txt")
 )
-var templates = template.Must(template.ParseFiles("edit.html", "account.html", "login.html"))
-var validPath = regexp.MustCompile("^/(edit|save|account|login)/?([a-zA-Z0-9]*)$")
+var templates = template.Must(template.ParseFiles("login.html", "account.html", "register.html"))
+var validPath = regexp.MustCompile("^/(login|account|register)/?([a-zA-Z0-9]*)$")
 
 /* 
  * test functions
  */
 func (p *Page) save() error {
-	filename := p.Title + ".txt"
+	filename := p.User + ".txt"
 	return ioutil.WriteFile(filename, p.Body, 0600)
 }
 func loadPage(title string) (*Page, error) {
@@ -74,64 +74,7 @@ func loadPage(title string) (*Page, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Page{Title: title, Body: body}, nil
-}
-
-/* 
- * webservice functions
- */
-func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
-	err := templates.ExecuteTemplate(w, tmpl+".html", p)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		m := validPath.FindStringSubmatch(r.URL.Path)
-		if m == nil {
-			http.NotFound(w, r)
-			return
-		}
-		fn(w, r, m[2])
-	}
-}
-func accountHandler(w http.ResponseWriter, r *http.Request, title string) {
-	p, err := loadPage(title)
-	if err != nil {
-		p = &Page{Title: title}
-	}
-	renderTemplate(w, "account", p)
-}
-func editHandler(w http.ResponseWriter, r *http.Request, title string) {
-	p, err := loadPage(title)
-	if err != nil {
-		p = &Page{Title: title}
-	}
-	renderTemplate(w, "login", p)
-}
-func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
-	body := r.FormValue("body")
-	p := &Page{Title: title, Body: []byte(body)}
-	err := p.save()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	http.Redirect(w, r, "/view/"+title, http.StatusFound)
-}
-func loginHandler(w http.ResponseWriter, r *http.Request, title string) {
-  user := r.FormValue("user")
-  pass := r.FormValue("pass")
-  //fmt.Println("user: " + user)
-  //fmt.Println("pass: " + pass)
-  err := loginUser(user, pass)
-	if err != nil {
-		//http.Error(w, err.Error(), http.StatusInternalServerError)
-	  http.Redirect(w, r, "/edit/" + user, http.StatusFound)
-		return
-	}
-	http.Redirect(w, r, "/account/" + user, http.StatusFound)
+	return &Page{User: title, Body: body}, nil
 }
 
 /* 
@@ -177,6 +120,52 @@ func printTable(table string) {
   printRows(rows)
 }
  
+/* 
+ * webservice functions
+ */
+func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
+	err := templates.ExecuteTemplate(w, tmpl+".html", p)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		m := validPath.FindStringSubmatch(r.URL.Path)
+		if m == nil {
+			http.NotFound(w, r)
+			return
+		}
+		fn(w, r, m[2])
+	}
+}
+func accountHandler(w http.ResponseWriter, r *http.Request, title string) {
+  user := r.FormValue("user")
+  pass := r.FormValue("pass")
+  //fmt.Println("user: '" + user + "'")
+  //fmt.Println("pass: '" + pass + "'")
+  err := loginUser(user, pass)
+	if err != nil {
+		//http.Error(w, err.Error(), http.StatusInternalServerError)
+	  http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+	renderTemplate(w, "account", &Page{User: user, Body: []byte("")})
+}
+func registerHandler(w http.ResponseWriter, r *http.Request, title string) {
+	p, err := loadPage(title)
+	if err != nil {
+		p = &Page{User: title}
+	}
+	renderTemplate(w, "register", p)
+}
+func loginHandler(w http.ResponseWriter, r *http.Request, title string) {
+	p, err := loadPage(title)
+	if err != nil {
+		p = &Page{User: title}
+	}
+	renderTemplate(w, "login", p)
+}
 
 /* 
  * user functions
@@ -190,7 +179,7 @@ func Crypt(password []byte) ([]byte, error) {
     defer clear(password)
     return bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
 }
-func addUser(user string, pass string) (error) {
+func addUser(user string, email string, pass string) (error) {
   // get database
   dsn := DB_USER + ":" + DB_PASS + "@" + DB_HOST + "/" + DB_NAME + "?charset=utf8"
   db, err := sql.Open("mysql", dsn)
@@ -207,7 +196,7 @@ func addUser(user string, pass string) (error) {
   if err != nil {
       panic(err.Error()) // proper error handling instead of panic in your app
   }
-  _, err = db.Exec("INSERT INTO users(user, pw_hash) VALUES(?, ?)", user, pwHash)
+  _, err = db.Exec("INSERT INTO users(user, email, pw_hash) VALUES(?, ?, ?)", user, email, pwHash)
   return err
 }
 func loginUser(user string, pass string) (error)  { 
@@ -224,7 +213,7 @@ func loginUser(user string, pass string) (error)  {
   }
   // query user
   var pwHash string
-  err = db.QueryRow("SELECT pw_hash FROM users WHERE user = ?", user).Scan(&pwHash)
+  err = db.QueryRow("SELECT pw_hash FROM users WHERE (user = ? OR email = ?)", user, user).Scan(&pwHash)
   switch {
     case err == sql.ErrNoRows:
       log.Printf("No user found.")
@@ -251,12 +240,10 @@ func main() {
   //  fmt.Println(err.Error());
   //}
 
-  
   flag.Parse()
 	http.HandleFunc("/account/", makeHandler(accountHandler))
-	http.HandleFunc("/edit/", makeHandler(editHandler))
-	http.HandleFunc("/save/", makeHandler(saveHandler))
 	http.HandleFunc("/login", makeHandler(loginHandler))
+	http.HandleFunc("/register", makeHandler(registerHandler))
 
 	if *addr {
 		l, err := net.Listen("tcp", "127.0.0.1:0")
