@@ -5,12 +5,12 @@
 package main
 
 import (
-  "github.com/yunyun/utils"
 	"flag"
 	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
+  "github.com/yunyun/util"
 )
 var (
 	addr = flag.Bool("addr", false, "find open address and print to final-port.txt")
@@ -33,10 +33,10 @@ func main() {
   //}
 
   flag.Parse()
-	http.HandleFunc("", RedirectHandler)
-	http.HandleFunc("/account", AccountHandler)
-	http.HandleFunc("/login", LoginHandler)
-	http.HandleFunc("/register", RegisterHandler)
+	http.HandleFunc("/", util.RedirectHandler)
+	http.HandleFunc("/account", util.AccountHandler)
+	http.HandleFunc("/login", util.LoginHandler)
+	http.HandleFunc("/register", util.RegisterHandler)
 
 	if *addr {
 		l, err := net.Listen("tcp", "127.0.0.1:0")

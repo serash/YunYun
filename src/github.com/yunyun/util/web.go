@@ -1,4 +1,4 @@
-package yunyun
+package util
 
 import (
   "fmt"
@@ -25,14 +25,14 @@ const (
 /*
  * define variables
  */
-var templates = template.Must(template.ParseFiles("web/login.html", "account.html", "web/register.html"))
+var templates = template.Must(template.ParseFiles("web/login.html", "web/account.html", "web/register.html"))
 var validPath = regexp.MustCompile("^/(login|account|register)/?([a-zA-Z0-9]*)$")
 
 /* 
  * webservice functions
  */
 func renderTemplate(w http.ResponseWriter, tmpl string, data UserData) {
-	err := templates.ExecuteTemplate(w, tmpl, data)
+	err := templates.ExecuteTemplate(w, tmpl+".html", data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -60,8 +60,8 @@ func createNewJWT() string {
 func AccountHandler(w http.ResponseWriter, r *http.Request) {
   user := r.FormValue("user")
   pass := r.FormValue("pass")
-  //fmt.Println("user: '" + user + "'")
-  //fmt.Println("pass: '" + pass + "'")
+  fmt.Println("user: '" + user + "'")
+  fmt.Println("pass: '" + pass + "'")
   token := createNewJWT()
   fmt.Println(token)
   
