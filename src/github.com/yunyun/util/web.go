@@ -1,4 +1,4 @@
-package utils
+package yunyun
 
 import (
   "fmt"
@@ -25,14 +25,14 @@ const (
 /*
  * define variables
  */
-var templates = template.Must(template.ParseFiles("web/login.html", "web/account.html", "web/register.html"))
+var templates = template.Must(template.ParseFiles("web/login.html", "account.html", "web/register.html"))
 var validPath = regexp.MustCompile("^/(login|account|register)/?([a-zA-Z0-9]*)$")
 
 /* 
  * webservice functions
  */
 func renderTemplate(w http.ResponseWriter, tmpl string, data UserData) {
-	err := templates.ExecuteTemplate(w, "web/"+tmpl+".html", data)
+	err := templates.ExecuteTemplate(w, tmpl, data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
