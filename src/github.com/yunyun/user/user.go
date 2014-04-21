@@ -6,14 +6,6 @@ import (
   _ "github.com/go-sql-driver/mysql"
   "code.google.com/p/go.crypto/bcrypt"
 )
-
-/*
- * Type definitions
- */
-type User struct {
-  user string
-  pwHash string
-}
 /* 
  * user functions
  */

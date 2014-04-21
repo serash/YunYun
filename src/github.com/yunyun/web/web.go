@@ -47,9 +47,9 @@ func renderTemplate(w http.ResponseWriter, tmpl string, data UserData) {
 //		fn(w, r, m[2])
 //	}
 //}
-func createNewJWT() string {
+func createNewJWT(user string) string {
   token := jwt.New(jwt.GetSigningMethod("HS256"))
-  token.Claims["foo"] = "bar"
+  token.Claims["user"] = user
   token.Claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
   tokenString, err := token.SignedString([]byte(JWT_SIGNING_KEY))
   if err != nil {
@@ -57,13 +57,22 @@ func createNewJWT() string {
   }
   return tokenString
 }
+func validateJWT(jwtKey string) {
+//  token, err := jwt.Parse(params["token"], func(token *jwt.Token) ([]byte, error) {
+//    return []byte(SecretKey), nil
+//  })
+//  if err == nil && token.Valid {
+//    return "User id: " + token.Claims["userid"].(string)
+//  } else {
+//    return "Invalid"
+//  }
+}
 func AccountHandler(w http.ResponseWriter, r *http.Request) {
+  fmt.Println("account page")
   user := r.FormValue("user")
   pass := r.FormValue("pass")
-  fmt.Println("user: '" + user + "'")
-  fmt.Println("pass: '" + pass + "'")
-  token := createNewJWT()
-  fmt.Println(token)
+  //fmt.Println("user: '" + user + "'")
+  //fmt.Println("pass: '" + pass + "'")
   
   err := loginUser(user, pass)
 	if err != nil {
@@ -71,14 +80,19 @@ func AccountHandler(w http.ResponseWriter, r *http.Request) {
 	  http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
+  token := createNewJWT(user)
+  fmt.Println(token)
 	renderTemplate(w, "account", UserData{User: user})
 }
 func RedirectHandler(w http.ResponseWriter, r *http.Request) {
+  fmt.Println("redirect page")
 	  http.Redirect(w, r, "/login", http.StatusFound)
 }
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
+  fmt.Println("register page")
 	renderTemplate(w, "register", UserData{User: ""})
 }
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
+  fmt.Println("login page")
 	renderTemplate(w, "login", UserData{User: ""})
 }
