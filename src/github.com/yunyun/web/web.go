@@ -1,12 +1,12 @@
-package util
+package web
 
 import (
   "fmt"
 	"html/template"
-  "net/http"
 	"regexp"
   "time"
   "github.com/dgrijalva/jwt-go"
+  "github.com/go-martini/martini"
 )
 /*
  * Type definitions
@@ -46,26 +46,11 @@ func renderTemplate(w http.ResponseWriter, tmpl string, data UserData) {
 //		}
 //		fn(w, r, m[2])
 //	}
-//}
-func createNewJWT(user string) string {
-  token := jwt.New(jwt.GetSigningMethod("HS256"))
-  token.Claims["user"] = user
-  token.Claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
-  tokenString, err := token.SignedString([]byte(JWT_SIGNING_KEY))
-  if err != nil {
-    panic(err.Error())
+
+func Auth(res http.ResponseWriter, req *http.Request) {
+  if req.Header.Get("API-KEY") != "secret123" {
+    http.Error(res, "Nope", 401)
   }
-  return tokenString
-}
-func validateJWT(jwtKey string) {
-//  token, err := jwt.Parse(params["token"], func(token *jwt.Token) ([]byte, error) {
-//    return []byte(SecretKey), nil
-//  })
-//  if err == nil && token.Valid {
-//    return "User id: " + token.Claims["userid"].(string)
-//  } else {
-//    return "Invalid"
-//  }
 }
 func AccountHandler(w http.ResponseWriter, r *http.Request) {
   fmt.Println("account page")

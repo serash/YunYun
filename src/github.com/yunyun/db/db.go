@@ -1,4 +1,4 @@
-package util
+package db
 
 import (
   "fmt"
@@ -19,6 +19,18 @@ const (
 /* 
  * database functions
  */
+func GetDB() (*sql.DB, error){
+  dsn := DB_USER + ":" + DB_PASS + "@" + DB_HOST + "/" + DB_NAME + "?charset=utf8"
+  db, err := sql.Open("mysql", dsn)
+  if err != nil {
+     panic(err.Error())
+  }
+  err = db.Ping()
+  if err != nil {
+      panic(err.Error()) // proper error handling instead of panic in your app
+  }
+  return db, err
+}
 func printRows(rows *sql.Rows) {
   cols, _ := rows.Columns()
   n := len(cols)

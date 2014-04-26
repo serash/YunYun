@@ -1,0 +1,20 @@
+<div class="row">
+  <div class="col-lg-8">
+  Here comes standard explanation of site or login form....
+  </div>
+    
+  <div class="col-lg-4">
+    <div class="well">
+      <h3>YunYun news</h3>
+      <!-- loop over news -->            
+      {{range .}}
+      <h4> [{{ .Date }}] {{ .Title }} </h4>
+      <p> {{ .Description }} </p>
+      <hr>
+      {{end}}
+    
+    </div><!-- /well -->
+  </div>
+</div>
+
+<hr>

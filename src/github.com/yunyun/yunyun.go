@@ -5,52 +5,53 @@
 package main
 
 import (
-	"flag"
-	"io/ioutil"
-	"log"
-	"net"
-	"net/http"
-  "github.com/yunyun/util"
-)
-var (
-	addr = flag.Bool("addr", false, "find open address and print to final-port.txt")
+  "fmt"
+  "github.com/yunyun/kotoba"
+  "github.com/yunyun/news"
+  "github.com/go-martini/martini"
+  "github.com/martini-contrib/render"
+  "strconv"
+  //"time"
 )
 
-/* 
- * test functions
- */
 
 /*
  * Main function
  */
 func main() {
-  //printTable("users")
-  //printTable("kotoba")
-  //err := addUser(user, pass)
-  //err := loginUser(user, pass)
-  //if err != nil {
-  //  fmt.Println(err.Error());
-  //}
-
-  flag.Parse()
-	http.HandleFunc("/", util.RedirectHandler)
-	http.HandleFunc("/account", util.AccountHandler)
-	http.HandleFunc("/login", util.LoginHandler)
-	http.HandleFunc("/register", util.RegisterHandler)
-
-	if *addr {
-		l, err := net.Listen("tcp", "127.0.0.1:0")
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = ioutil.WriteFile("final-port.txt", []byte(l.Addr().String()), 0644)
-		if err != nil {
-			log.Fatal(err)
-		}
-		s := &http.Server{}
-		s.Serve(l)
-		return
-	}
-
-	http.ListenAndServe(":3000", nil)
+  m := martini.Classic()
+  //render html templates from directory
+  m.Use(render.Renderer(render.Options{
+    Layout: "layout",
+  }))
+  
+  m.Get("/", func(r render.Render) {
+ 
+    news, err := news.GetLastNews()
+    if err != nil {
+      fmt.Println(err.Error())
+    }
+    r.HTML(200, "home", news)
+	})
+  
+  m.Get("/kotoba",func(r render.Render) {
+ 
+    k, err := kotoba.GetAllKotoba(2)
+    if err != nil {
+      fmt.Println(err.Error())
+    }
+    r.HTML(200, "kotobalist", k)
+	})
+  
+  
+	m.Get("/kotoba/:id", func(params martini.Params, r render.Render) {
+    id, _ := strconv.Atoi(params["id"])
+    k, err := kotoba.GetKotoba(id)
+    if err != nil {
+      fmt.Println(err.Error())
+    }
+		r.HTML(200, "kotoba", k)
+	})
+ 
+	m.Run()
 }
