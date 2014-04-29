@@ -10,7 +10,7 @@ import (
   "net/http"
   "github.com/yunyun/auth"
   "github.com/yunyun/kotoba"
-  "github.com/yunyun/news"  
+  //"github.com/yunyun/news"  
   "github.com/yunyun/db"
   "github.com/go-martini/martini"
   "github.com/martini-contrib/render"  
@@ -18,6 +18,13 @@ import (
   "strconv"
   //"time"
 )
+var pageLogin string = "/login/"
+var pageRegister string = "/register/"
+var funcLogin string = "/login"
+var funcLogout string = "/logout"
+var funcRegister string = "/register"
+var funcKotoba string = "/kotoba/:id"
+var funcHome string = "/"
 
 type User struct {
   Id int
@@ -49,14 +56,11 @@ func main() {
     Layout: "layout",
   }))
   
-  m.Post("/login", PostLogin)
-  m.Get("/logout", func(s sessions.Session) string {
-    s.Delete("userId")
-    return "Logged out"
-  })
-  m.Get("/", Home)  
-  m.Get("/kotoba", RequireLogin, Kotoba)
-	m.Get("/kotoba/:id", RequireLogin, KotobaId)
+  m.Post(funcLogin, PostLogin)
+  m.Get(funcLogout, Logout)
+  m.Get(funcRegister, Register)
+  m.Get(funcHome, RequireLogin, Home)  
+  m.Get(funcKotoba, RequireLogin, Kotoba)
  
 	m.Run()
 }
@@ -70,41 +74,40 @@ func RequireLogin(rw http.ResponseWriter, req *http.Request, s sessions.Session,
   user.Email = email
   user.Id = id
   if err != nil {
-    http.Redirect(rw, req, "/", http.StatusFound)
+    http.Redirect(rw, req, pageLogin, http.StatusFound)
     return
   }
   c.Map(user)
 }
 
-func PostLogin(req *http.Request, db *sql.DB, s sessions.Session) (int, string){
+func Logout(rw http.ResponseWriter, req *http.Request, s sessions.Session) {
+  s.Delete("userId")
+  http.Redirect(rw, req, pageLogin, http.StatusFound)
+}
+func Register(rw http.ResponseWriter, req *http.Request, s sessions.Session) {
+  http.Redirect(rw, req, pageRegister, http.StatusFound)
+}
+
+func PostLogin(rw http.ResponseWriter, req *http.Request, db *sql.DB, s sessions.Session) {
   user, pass := req.FormValue("email"), req.FormValue("password")
   id, err := auth.LoginUser(db, user, pass)
   if err != nil {
-    return 401, "Not Authorized"
+    http.Redirect(rw, req, pageLogin, http.StatusFound)
   }
   s.Set("userId", id)
-  return 200, "user id is " + id
+  http.Redirect(rw, req, funcHome, http.StatusFound)
 }
 
-func Home(r render.Render) {
- 
-    news, err := news.GetLastNews()
-    if err != nil {
-      fmt.Println(err.Error())
-    }
-    r.HTML(200, "home", news)
-}
-
-func Kotoba(r render.Render, u *User) {
+func Home(r render.Render, u *User) {
  
     k, err := kotoba.GetAllKotoba(u.Id)
     if err != nil {
       fmt.Println(err.Error())
     }
-    r.HTML(200, "kotobalist", k)
-	}
+    r.HTML(200, "home", k)
+}
 
-func KotobaId(params martini.Params, r render.Render) {
+func Kotoba(params martini.Params, r render.Render, u *User) {
     id, _ := strconv.Atoi(params["id"])
     k, err := kotoba.GetKotoba(id)
     if err != nil {

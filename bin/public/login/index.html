@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Log in</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Add custom CSS here -->
+    <link href="/css/yunyun.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+    <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+
+    <div class="container">
+ 
+     <div class="row-fluid">
+       <div class="col-md-6">
+        <form class="form-signin" role="form" action="/login" method="POST">
+          <h2 class="form-signin-heading">Please sign in</h2>
+          <input type="email" name="email" class="form-control" placeholder="Email address" autofocus>
+          <input type="password" name="password" class="form-control" placeholder="Password">
+  
+          <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
+        </form>
+       </div>
+       <div class="col-md-6">
+         <form class="form-signin" role="form" action="/register" method="POST">
+           <h2 class="form-signin-heading">Register to YunYun</h2>
+           <input type="name" name="name" class="form-control" placeholder="Name" autofocus>
+           <input type="email" name="email" class="form-control" placeholder="Email address">
+           <input type="password" name="password" class="form-control" placeholder="Password">
+           
+           <button class="btn btn-lg btn-primary btn-block" type="submit">Register</button>
+         </form>
+       </div>
+     </div>
+
+    </div> <!-- /container -->
+
+
+    <!-- JavaScript -->
+    <script src="http://code.jquery.com/jquery-latest.js"></script>
+    <script src="/js/bootstrap.js"></script>
+  </body>
+</html>
