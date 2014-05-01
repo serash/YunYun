@@ -29,3 +29,19 @@
 #
 # add kotoba: INSERT INTO kotoba(user_id, kotoba, imi, level, next_review) 
 #             VALUES("user_id", "kotoba", "imi", 3, "date");
+
+#setup news table
+#id | title | date | description
+# CREATE TABLE news (
+#    id INT NOT NULL AUTO_INCREMENT,
+#    title VARCHAR(100) NOT NULL,
+#    date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+#    description TEXT NOT NULL,
+#    PRINARY KEY(id)
+#  );
+#
+# add news: INSERT INTO news(title, description)
+#           VALUS("Kotoba version 1.0 released!", 
+#           "Features include showing a list of vocabulary, adding vocabulary, practicing vocabulary (SRS).");
+
+

@@ -1,7 +1,8 @@
 yunyun
 ======================
 ### INTRODUCTION ####
-Website with Golang for adding kanji/hanzi to an SRS system for vocabulary practice
+Website with Golang for adding kanji/hanzi to an SRS system for vocabulary practice.
+Can be used to add different kind of languages/vocabulary.
 
 #### INSTALL ####
 make $GOPATH point to the current folder with the src directory
@@ -12,22 +13,9 @@ make $GOPATH point to the current folder with the src directory
 run the program from the bin folder, where the webpages are!
 
 #### TODO ####
-- cleanup unnecessary files
-- example page of kotoba
-- how to check if user is logged in -> json webtoken
+- add option to add how to study: word <-> meaning <-> reading
+- improve the way updates happen to the words (less traffic)
+- make api-key per user
+- make a basic api based on api-key
 
 #### EXTRA ####
-go website tutorial:
-http://golang.org/doc/articles/wiki/
-
-save user password:
-http://alias.io/2010/01/store-passwords-safely-with-php-and-mysql/
-
-bcrpyt for go:
-http://godoc.org/code.google.com/p/go.crypto/bcrypt
-
-example sql query:
-https://github.com/go-sql-driver/mysql/wiki/Examples
-
-json webtoken:
-https://github.com/dgrijalva/jwt-go
