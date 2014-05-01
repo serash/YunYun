@@ -1,9 +1,44 @@
 body {
-  padding-top: 40px;
+  padding-top: 75px;
   padding-bottom: 40px;
-  background-color: #eee;
+  background-color: #fff;
 }
-
+p {
+  padding-bottom: 10px;
+  font-size: 18px; 
+}
+.table-hr {
+  margin: 0; 
+}
+.yy-type {
+  padding: 0;
+  font-size: 18px; 
+  color: #A0A0A0;
+}
+.hidden-review-info {
+   display:none;
+}
+.extra-info {
+ color: #505050;
+}
+.review-input {
+  width: 100%;
+  font-size: 24px; 
+}
+.showinfo-button {
+  left: 50%;
+  border: 0;
+  background: 0; 
+  font-size: 14px; 
+  color: #A0A0A0;
+}
+.review-button {
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background: 0; 
+  font-size: 24px; 
+}
 .form-signin {
   max-width: 330px;
   padding: 15px;

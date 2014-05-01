@@ -5,7 +5,6 @@ import (
   "strconv"
   "database/sql"
   _ "github.com/go-sql-driver/mysql"
-  "github.com/yunyun/db"
 )
 
 /*
@@ -27,22 +26,20 @@ var time_per_level []string = []string{
 var insert_query string = "INSERT INTO " + 
                    "kotoba(user_id, kotoba, hatsuon, hatsuon_mnemonic, imi, "+
                    "imi_mnemonic, level, next_review, unlocked) " + 
-                   "VALUES(?, ?, ?, ?, ?, ?)"
-var update_query string = "UPDATE kotoba " + 
-                   "SET user_id=?, " +
-                   "SET kotoba=?, " +
-                   "SET hatsuon=?, " +
-                   "SET hatsuon_mnemonic=?, " +
-                   "SET imi=?, " +
-                   "SET imi_mnemonic=?, " +
+                   "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)"
+var update_review_query string = "UPDATE kotoba " + 
                    "SET level=?, " +
-                   "SET next_review=?, " +
-                   "SET unlocked=?, " +
+                   "next_review=? " +
                    "WHERE id = ?"
 var select_all_query string = "SELECT * FROM kotoba WHERE (user_id = ?)"
 var select_query string = "SELECT * FROM kotoba WHERE (id = ?)"
 var select_review_query string = "SELECT * FROM kotoba WHERE "+
                         "(user_id = ? AND next_review < NOW())"
+var select_first_review_query string = "SELECT * FROM kotoba WHERE "+
+                        "(user_id = ? AND next_review < NOW()) " + 
+                        "ORDER BY unlocked DESC LIMIT 1"
+var select_next_review_query string = "SELECT * FROM kotoba WHERE "+
+                        "user_id = ? ORDER BY next_review ASC LIMIT 1"
 
 type Kotoba struct {
   Id        int
@@ -55,6 +52,7 @@ type Kotoba struct {
   Level     int
   Review    string
   Unlocked  string
+  Valid     int
 }
 func FormatTime(t time.Time) string {
   return t.Format("2006-01-02 15:04:05")
@@ -68,18 +66,18 @@ func NewKotoba(uid int, k string, h string, i string, l int, r string) *Kotoba {
   return &Kotoba{Id: -1, User_id:uid, Goi: k, Hatsuon: h, Imi: i, Level: l, 
                  Review: r, Unlocked: FormatTime(time.Now().Local())}
 }
-func NewDefaultLevelKotoba(uid int, k string, h string, i string) *Kotoba {
+func NewDefaultLevelKotoba(uid int, k string, h string, h_ string, i string, i_ string) *Kotoba {
   timenow := time.Now().Local()
   hours, _ := time.ParseDuration(time_per_level[2])
   r := timenow.Add(hours)
-  return &Kotoba{Id: -1, User_id:uid, Goi: k, Hatsuon: h, Imi: i, Level: 2, 
+  return &Kotoba{Id: -1, User_id:uid, Goi: k, Hatsuon: h, Hatsuon_: h_, Imi: i, Imi_: i_, Level: 2, 
                  Review: FormatTime(r), Unlocked: FormatTime(time.Now().Local())}
 }
 
 /* 
  * kotoba functions
  */
-func (k *Kotoba) IncLevelKotoba() {
+func (k *Kotoba) IncLevel() {
   k.Level++
   if (k.Level > 9) {
     k.Level = 9
@@ -88,8 +86,7 @@ func (k *Kotoba) IncLevelKotoba() {
   r, _ := time.Parse("2006-01-02 15:04:05", k.Review)
   k.Review = FormatTime(r.Add(hours))
 }
-func (k *Kotoba) DecLevelKotoba() {
-  k.Level--
+func (k *Kotoba) DecLevel() {
   k.Level--
   if (k.Level < 0) {
     k.Level = 0
@@ -98,35 +95,22 @@ func (k *Kotoba) DecLevelKotoba() {
   r, _ := time.Parse("2006-01-02 15:04:05", k.Review)
   k.Review = FormatTime(r.Add(hours))
 }
-func (k *Kotoba)SaveKotoba() (error) {
-  // get database
-  db, err := db.GetDB()
-  if err != nil {
-    panic(err.Error())
-  }
-  defer db.Close()
+func (k *Kotoba)Save(db *sql.DB) (error) {
   // insert kotoba
-  _, err = db.Exec(insert_query,
+  _, err := db.Exec(insert_query,
                    k.User_id, k.Goi, k.Hatsuon, k.Hatsuon_, k.Imi, 
                    k.Imi_, k.Level, k.Review, k.Unlocked)
   return err
 }
-func (k *Kotoba)UpdateKotoba() (error) {
-  // get database
-  db, err := db.GetDB()
-  if err != nil {
-    panic(err.Error())
-  }
-  defer db.Close()
+func (k *Kotoba)Update(db *sql.DB) (error) {
   // insert kotoba
+  var err error
   if(k.Id == -1) {
     _, err = db.Exec(insert_query,
                    k.User_id, k.Goi, k.Hatsuon, k.Hatsuon_, k.Imi, 
                    k.Imi_, k.Level, k.Review, k.Unlocked)
   } else {
-    _, err = db.Exec(update_query,
-                   k.User_id, k.Goi, k.Hatsuon, k.Hatsuon_, k.Imi, 
-                   k.Imi_, k.Level, k.Review, k.Unlocked, k.Id)
+    _, err = db.Exec(update_review_query, k.Level, k.Review, k.Id)
   }
   return err
 }
@@ -157,7 +141,9 @@ func GetKotobaFromRow(row *sql.Row) *Kotoba {
   var i_ sql.NullString
   err := row.Scan(&k.Id, &k.User_id, &k.Goi, &h, &h_, &i, &i_, &k.Level, &k.Review, &k.Unlocked)
   if err != nil {
-    panic(err.Error())
+    k.Id = -1
+    k.Valid = -1
+    return &k
   }
   k.Hatsuon = ""
   k.Hatsuon_ = ""
@@ -167,7 +153,7 @@ func GetKotobaFromRow(row *sql.Row) *Kotoba {
     k.Hatsuon = h.String
   }
   if h_.Valid {
-    k.Hatsuon_ = h.String
+    k.Hatsuon_ = h_.String
   }
   if i.Valid {
     k.Imi = i.String
@@ -175,6 +161,7 @@ func GetKotobaFromRow(row *sql.Row) *Kotoba {
   if i_.Valid {
     k.Imi_ = i_.String
   }
+  k.Valid = 0
   return &k
 }
 func GetKotobaFromRows(rows *sql.Rows) *[]Kotoba {
@@ -208,37 +195,18 @@ func GetKotobaFromRows(rows *sql.Rows) *[]Kotoba {
   }
   return &kotobaArray
 }
-func GetKotoba(id int) (*Kotoba, error) {
-  // get database
-  db, err := db.GetDB()
-  if err != nil {
-     panic(err.Error())
-  }
-  defer db.Close()
-  err = db.Ping()
-  if err != nil {
-      panic(err.Error()) // proper error handling instead of panic in your app
-  }
+func compare(answer string, ref string) (bool) {
+  return answer == ref
+}
+
+func GetKotoba(id int, db *sql.DB) (*Kotoba) {
   // query kotoba
   row := db.QueryRow(select_query, id)
-  if err != nil {
-    panic(err.Error())
-  }  
   // get data from rows
   kotoba := GetKotobaFromRow(row)
-  return kotoba, err
+  return kotoba
 }
-func GetAllKotoba(user_id int) (*[]Kotoba, error) {
-  // get database
-  db, err := db.GetDB()
-  if err != nil {
-     panic(err.Error())
-  }
-  defer db.Close()
-  err = db.Ping()
-  if err != nil {
-      panic(err.Error()) // proper error handling instead of panic in your app
-  }
+func GetAllKotoba(user_id int, db *sql.DB) (*[]Kotoba, error) {
   // query kotoba
   rows, err := db.Query(select_all_query, user_id)
   if err != nil {
@@ -249,17 +217,7 @@ func GetAllKotoba(user_id int) (*[]Kotoba, error) {
   kotobaArray := GetKotobaFromRows(rows)
   return kotobaArray, err
 }
-func GetReviewKotoba(user_id int) (*[]Kotoba, error) {
-  // get database
-  db, err := db.GetDB()
-  if err != nil {
-     panic(err.Error())
-  }
-  defer db.Close()
-  err = db.Ping()
-  if err != nil {
-      panic(err.Error()) // proper error handling instead of panic in your app
-  }
+func GetReviewKotoba(user_id int, db *sql.DB) (*[]Kotoba, error) {
   // query kotoba
   rows, err := db.Query(select_review_query, user_id)
   if err != nil {
@@ -269,4 +227,15 @@ func GetReviewKotoba(user_id int) (*[]Kotoba, error) {
   defer rows.Close()
   kotobaArray := GetKotobaFromRows(rows)
   return kotobaArray, err
+}
+func GetFirstReviewKotoba(user_id int, db *sql.DB) (*Kotoba) {
+  // query kotoba
+  row := db.QueryRow(select_first_review_query, user_id)
+  kotoba := GetKotobaFromRow(row)
+  if kotoba.Valid == -1 {
+    row := db.QueryRow(select_next_review_query, user_id)
+    kotoba = GetKotobaFromRow(row)
+    kotoba.Valid = -1
+  }
+  return kotoba
 }

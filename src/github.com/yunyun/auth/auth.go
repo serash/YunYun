@@ -19,7 +19,7 @@ func Crypt(password []byte) ([]byte, error) {
     defer clear(password)
     return bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
 }
-func addUser(db *sql.DB, user string, email string, pass string) (error) {
+func AddUser(db *sql.DB, user string, email string, pass string) (error) {
   // insert user
   pwHash, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
   if err != nil {

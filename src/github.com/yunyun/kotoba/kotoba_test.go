@@ -1,25 +1,19 @@
 package kotoba
 
 import (
-  "time"
   "fmt"
   "testing"
+  "github.com/yunyun/db"
 )
 
 
-func Test_GetKotoba(t *testing.T) {
-  user_id := 2 
-  
-  k, err := GetAllKotoba(user_id)
+func Test_GetKotoba(t *testing.T) {  
+  db, err := db.GetDB()
   if err != nil {
-    fmt.Println(err.Error())
+    panic(err)
   }
-  for _, s := range *k {
-    fmt.Println(s)
-  }
-  time := time.Now()
-  fmt.Println(time.Format("2006-01-02 15:04:05"))
-  ko, err:= GetKotoba(2)
-  fmt.Println(ko)
-  
+  k := GetKotoba(6, db)
+  fmt.Println(k)
+  k.IncLevel()
+  fmt.Println(k)
 }

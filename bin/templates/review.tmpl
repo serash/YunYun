@@ -1,0 +1,71 @@
+<!-- 0 is true, any other is false -->
+{{if .Valid}}
+<h1> Congratulations! You have no more reviews at this time! :) </h1>
+<h1> Next review at {{ .Review }} </h1>
+{{else}}
+<div class="goi">
+  <div class="col-lg-12 text-center">
+    <h1> {{ .Hatsuon }} </h1>
+  </div>
+  <hr>
+  <div class="col-lg-12 text-center">
+    <h3> Meaning </h3>
+  </div>
+  <hr>
+</div>
+<form name="review" action="/reviewed/{{ .Id }}"  method="POST"
+      onsubmit="return checkReview({{ .Imi }})">
+  <div class="input-group col-lg-12">
+    <input name="answer" class="review-input text-center" autocomplete="off" 
+           placeholder="Answer" autofocus>
+    <input name="checked" class="hidden-review-info" readonly 
+           placeholder="check">
+    <span class="input-group-addon">
+      <input type="submit" class="review-button" value=">"/>
+    </span>
+  </div>
+</form>
+<!-- show more info if wrong -->
+<div name="showinfobutton" class="hidden-review-info col-lg-12 text-center">
+  <button class="showinfo-button" onClick="showInfo()">
+    show extra information
+  </button>
+</div>
+<div name="info" class="hidden-review-info">
+  <table class="table">
+    <tr>
+      <td class="col-lg-3">         
+        <div class="yy-type" >
+          Reading 
+        </div>
+        <hr class="table-hr">
+        <h3> {{ .Hatsuon }} </h3>  
+      </td>
+      <td class="col-lg-9"> 
+        <div class="yy-type" >
+          Reading Info 
+        </div>
+        <hr class="table-hr">
+        <h3 class="extra-info"> {{ .Hatsuon_ }} </h3>  
+      </td>
+    </tr>
+    <tr>
+      <td class="col-lg-3"> 
+        <div class="yy-type" >
+          Meaning 
+        </div>
+        <hr class="table-hr">
+        <h3> {{ .Imi }} </h3>  
+      </td>
+      <td class="col-lg-9"> 
+        <div class="yy-type" >
+          Meaning Info
+        </div>
+        <hr class="table-hr">
+        <h3 class="extra-info"> {{ .Imi_ }} </h3>  
+      </td>
+    </tr>
+  </table>
+</div>
+
+{{end}}
