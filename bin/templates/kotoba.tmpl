@@ -1,15 +1,17 @@
 <div class="col-lg-12">
-  <h1> {{ .Goi }}</h1> 
+  <h1 class="ch-text"> {{ .Goi }}</h1> 
   <table class="table">
     <tr>
-      <td class="col-lg-3">         
+      <td class="col-lg-4">         
         <div class="yy-type" >
           Reading 
         </div>
         <hr class="table-hr">
-        <h3> {{ .Hatsuon }} </h3>  
+        <h3> 
+         {{ range $i, $e := .Hatsuons }}{{if $i}},{{end}}{{ $e.Hatsuon }} {{end}}
+        </h3>  
       </td>
-      <td class="col-lg-9"> 
+      <td class="col-lg-8"> 
         <div class="yy-type" >
           Reading Info 
         </div>
@@ -18,25 +20,46 @@
       </td>
     </tr>
     <tr>
-      <td class="col-lg-3"> 
+      <td class="col-lg-4"> 
         <div class="yy-type" >
           Meaning 
         </div>
         <hr class="table-hr">
-        <h3> {{ .Imi }} </h3>  
+        <h3> 
+         {{ range $i, $e := .Imis }}{{if $i}}, {{end}}{{$e.Imi }} {{end}}
+        </h3>  
       </td>
-      <td class="col-lg-9"> 
+      <td class="col-lg-8"> 
         <div class="yy-type" >
           Meaning Info
         </div>
         <hr class="table-hr">
-        <h3 class="extra-info"> {{ .Imi_ }} </h3>  
+        <h3 class="extra-info"> {{ .Imi_ }} </h3>
+      </td>
+    </tr>
+    <tr>
+      <td class="col-lg-4"> 
+        <div class="yy-type" >
+          Labels 
+        </div>
+        <hr class="table-hr">
+        <h3> 
+         {{ range $i, $e := .Labels }}{{if $i}},{{end}}{{ $e.Label }} {{end}}
+        </h3>  
+      </td>
+      <td class="col-lg-"> 
+        <div class="yy-type" >
+          Difficulty
+        </div>
+        <hr class="table-hr">
+        <h3 class="extra-info"> {{ .Difficulty }} </h3>
       </td>
     </tr>
   </table>
+  <a href="/edit/{{ .Id.Hex }}"><h4 class="ch-text">Edit word</h4></a>
   <div class="row">
     <div class="col-md-3">
-      Next review on {{ .Review }}
+      Next review in {{ .Review }}
     </div>      
     <div class="col-md-3">
       Unlocked on {{ .Unlocked }}

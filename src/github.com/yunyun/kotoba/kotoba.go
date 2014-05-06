@@ -1,241 +1,170 @@
 package kotoba
 
 import (
-  "time"
+  "fmt"
+  "math"
   "strconv"
-  "database/sql"
-  _ "github.com/go-sql-driver/mysql"
+  "time"
+  "github.com/yunyun/db"
+  "net/http"
+  "github.com/go-martini/martini"
+  "github.com/martini-contrib/render"
+  "labix.org/v2/mgo"
+  "labix.org/v2/mgo/bson"
 )
 
 /*
  * Constants/Variables definitions
  */
-// todo make a var table with level time
-var time_per_level []string = []string{
-  "1h", 
-  "2h", 
-  "4h", 
-  "12h", 
-  "24h", 
-  "48h", 
-  "192h", 
-  "384h",
-  "768h",  
-  "1536h",
-}
-var insert_query string = "INSERT INTO " + 
-                   "kotoba(user_id, kotoba, hatsuon, hatsuon_mnemonic, imi, "+
-                   "imi_mnemonic, level, next_review, unlocked) " + 
-                   "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)"
-var update_review_query string = "UPDATE kotoba " + 
-                   "SET level=?, " +
-                   "next_review=? " +
-                   "WHERE id = ?"
-var select_all_query string = "SELECT * FROM kotoba WHERE (user_id = ?)"
-var select_query string = "SELECT * FROM kotoba WHERE (id = ?)"
-var select_review_query string = "SELECT * FROM kotoba WHERE "+
-                        "(user_id = ? AND next_review < NOW())"
-var select_first_review_query string = "SELECT * FROM kotoba WHERE "+
-                        "(user_id = ? AND next_review < NOW()) " + 
-                        "ORDER BY unlocked DESC LIMIT 1"
-var select_next_review_query string = "SELECT * FROM kotoba WHERE "+
-                        "user_id = ? ORDER BY next_review ASC LIMIT 1"
-
-type Kotoba struct {
-  Id        int
-  User_id   int
-  Goi    string
-  Hatsuon   string
-  Imi       string
-  Hatsuon_  string // mnemonic for hatsuon
-  Imi_      string // mnemonic for hatsuon
-  Level     int
-  Review    string
-  Unlocked  string
-  Valid     int
-}
-func FormatTime(t time.Time) string {
-  return t.Format("2006-01-02 15:04:05")
-}
-func ExistingKotoba(id_ int, uid int, k string, h string, i string, h_ string, i_ string, 
-                    l int, r string, u string) *Kotoba {
-  return &Kotoba{Id: id_, User_id:uid, Goi: k, Hatsuon: h, Imi: i, Hatsuon_ : h_, 
-                 Imi_: i_, Level: l, Review: r, Unlocked: u}
-}
-func NewKotoba(uid int, k string, h string, i string, l int, r string) *Kotoba {
-  return &Kotoba{Id: -1, User_id:uid, Goi: k, Hatsuon: h, Imi: i, Level: l, 
-                 Review: r, Unlocked: FormatTime(time.Now().Local())}
-}
-func NewDefaultLevelKotoba(uid int, k string, h string, h_ string, i string, i_ string) *Kotoba {
-  timenow := time.Now().Local()
-  hours, _ := time.ParseDuration(time_per_level[2])
-  r := timenow.Add(hours)
-  return &Kotoba{Id: -1, User_id:uid, Goi: k, Hatsuon: h, Hatsuon_: h_, Imi: i, Imi_: i_, Level: 2, 
-                 Review: FormatTime(r), Unlocked: FormatTime(time.Now().Local())}
-}
-
-/* 
- * kotoba functions
+const (
+  PAGE_ERROR string = "/error/"
+  FUNC_HOME string = "/"
+  HOME_TEMPLATE = "home"
+  REVIEW_TEMPLATE = "review"
+  PAGE_REVIEW string = "/doReviews"
+  FUNC_KOTOBA string = "/kotoba/"
+  TEMPLATE_SHOW = "kotoba"
+  TEMPLATE_EDIT = "edit"
+  TEMPLATE_STATS = "stats"
+)
+/*
+ * WEB FUNCTIONS
  */
-func (k *Kotoba) IncLevel() {
-  k.Level++
-  if (k.Level > 9) {
-    k.Level = 9
-  }
-  hours, _ := time.ParseDuration(time_per_level[k.Level])    
-  r, _ := time.Parse("2006-01-02 15:04:05", k.Review)
-  k.Review = FormatTime(r.Add(hours))
+type HomeData struct {
+  Count int
+  More int
+  First []db.MongoKotoba
 }
-func (k *Kotoba) DecLevel() {
-  k.Level--
-  if (k.Level < 0) {
-    k.Level = 0
-  }
-  hours, _ := time.ParseDuration(time_per_level[k.Level]) 
-  r, _ := time.Parse("2006-01-02 15:04:05", k.Review)
-  k.Review = FormatTime(r.Add(hours))
+type ReviewData struct {
+  Valid int
+  ReviewUntil string
+  Kotoba db.MongoKotoba
 }
-func (k *Kotoba)Save(db *sql.DB) (error) {
-  // insert kotoba
-  _, err := db.Exec(insert_query,
-                   k.User_id, k.Goi, k.Hatsuon, k.Hatsuon_, k.Imi, 
-                   k.Imi_, k.Level, k.Review, k.Unlocked)
-  return err
-}
-func (k *Kotoba)Update(db *sql.DB) (error) {
-  // insert kotoba
-  var err error
-  if(k.Id == -1) {
-    _, err = db.Exec(insert_query,
-                   k.User_id, k.Goi, k.Hatsuon, k.Hatsuon_, k.Imi, 
-                   k.Imi_, k.Level, k.Review, k.Unlocked)
-  } else {
-    _, err = db.Exec(update_review_query, k.Level, k.Review, k.Id)
-  }
-  return err
-}
-func GetStringValue(val []byte) string {
-  if val == nil {
-    return "NULL"
-  } else {
-    return string(val)
-  }
-}
-func GetIntValue(val []byte) int {
-  if val == nil {
-    return -1
-  } else {
-    v, err := strconv.Atoi(string(val))
-    if err != nil {
-      return -1
-    }
-    return v
-  }
-}
-func GetKotobaFromRow(row *sql.Row) *Kotoba {
-  // get data from row
-  var k Kotoba
-  var h sql.NullString
-  var h_ sql.NullString
-  var i sql.NullString
-  var i_ sql.NullString
-  err := row.Scan(&k.Id, &k.User_id, &k.Goi, &h, &h_, &i, &i_, &k.Level, &k.Review, &k.Unlocked)
-  if err != nil {
-    k.Id = -1
-    k.Valid = -1
-    return &k
-  }
-  k.Hatsuon = ""
-  k.Hatsuon_ = ""
-  k.Imi = ""
-  k.Imi_ = ""
-  if h.Valid { 
-    k.Hatsuon = h.String
-  }
-  if h_.Valid {
-    k.Hatsuon_ = h_.String
-  }
-  if i.Valid {
-    k.Imi = i.String
-  }
-  if i_.Valid {
-    k.Imi_ = i_.String
-  }
-  k.Valid = 0
-  return &k
-}
-func GetKotobaFromRows(rows *sql.Rows) *[]Kotoba {
-  // get data from rows
-  var kotobaArray []Kotoba
-  columns, err := rows.Columns()
-  values := make([]sql.RawBytes, len(columns))
-  scanArgs := make([]interface{}, len(values))
-  for i := range values {
-    scanArgs[i] = &values[i]
-  }
-  //var kotoba Kotoba
-  for rows.Next() {
-    err = rows.Scan(scanArgs...)
-    if err != nil {
-      panic(err.Error())
-    }
-    var kotoba Kotoba
-    kotoba.Id = GetIntValue(values[0])
-    kotoba.User_id = GetIntValue(values[1])
-    kotoba.Goi = GetStringValue(values[2])
-    kotoba.Hatsuon = GetStringValue(values[3])
-    kotoba.Hatsuon_ = GetStringValue(values[4])
-    kotoba.Imi = GetStringValue(values[5])
-    kotoba.Imi_ = GetStringValue(values[6])
-    kotoba.Level = GetIntValue(values[7])
-    kotoba.Review = GetStringValue(values[8])
-    kotoba.Unlocked = GetStringValue(values[9])
-    //fmt.Println(kotoba)
-    kotobaArray = append(kotobaArray, kotoba)
-  }
-  return &kotobaArray
-}
-func compare(answer string, ref string) (bool) {
-  return answer == ref
+type StatsData struct {
+  ReviewsNow int
+  ReviewsHour int
+  ReviewsDay int
+  Beginner int
+  Elementary int
+  Intermediate int
+  Master int
+  Known int
 }
 
-func GetKotoba(id int, db *sql.DB) (*Kotoba) {
-  // query kotoba
-  row := db.QueryRow(select_query, id)
-  // get data from rows
-  kotoba := GetKotobaFromRow(row)
-  return kotoba
-}
-func GetAllKotoba(user_id int, db *sql.DB) (*[]Kotoba, error) {
-  // query kotoba
-  rows, err := db.Query(select_all_query, user_id)
-  if err != nil {
-    panic(err.Error())
-  }  
-  // get data from rows
-  defer rows.Close()
-  kotobaArray := GetKotobaFromRows(rows)
-  return kotobaArray, err
-}
-func GetReviewKotoba(user_id int, db *sql.DB) (*[]Kotoba, error) {
-  // query kotoba
-  rows, err := db.Query(select_review_query, user_id)
-  if err != nil {
-    panic(err.Error())
+func TimeUntil(t time.Time) string {
+  until := t.Sub(time.Now().Local())
+  if until.Hours() > 24 {
+    return fmt.Sprintf("%v days %v hours %v minutes", math.Floor(until.Hours() / 24), 
+                       math.Floor(math.Mod(until.Hours(), 24)), 
+                       math.Ceil(math.Mod(until.Minutes(), 60)) )
+  } else if until.Minutes() > 60 {
+    return fmt.Sprintf("%v hours %v minutes", math.Floor(until.Hours()), math.Ceil(math.Mod(until.Minutes(), 60)))
+  } else if until.Minutes() < 0 {
+    return "available now"
+  } else if until.Minutes() > 1 {
+    return fmt.Sprintf("%v minutes", math.Ceil(until.Minutes()))
+  } else {
+    return fmt.Sprintf("%v minute", math.Ceil(until.Minutes()))
   }
-  // get data from rows
-  defer rows.Close()
-  kotobaArray := GetKotobaFromRows(rows)
-  return kotobaArray, err
+                       
 }
-func GetFirstReviewKotoba(user_id int, db *sql.DB) (*Kotoba) {
-  // query kotoba
-  row := db.QueryRow(select_first_review_query, user_id)
-  kotoba := GetKotobaFromRow(row)
-  if kotoba.Valid == -1 {
-    row := db.QueryRow(select_next_review_query, user_id)
-    kotoba = GetKotobaFromRow(row)
-    kotoba.Valid = -1
+// WEB
+func Home(rw http.ResponseWriter, req *http.Request, r render.Render, u *db.MongoUser, c *mgo.Collection) {
+  k := db.GetAllKotoba(u.Id, c)
+  
+  data := HomeData{}
+  data.Count = len(*k)
+  if data.Count > 0 {
+    data.First = (*k)[0:20]
+    data.More = 1 // print X more
+  } else {
+    data.First = (*k)
   }
-  return kotoba
+  r.HTML(200, HOME_TEMPLATE, data)
 }
+func Search(rw http.ResponseWriter, req *http.Request, r render.Render, u *db.MongoUser, c *mgo.Collection) {
+  find := req.FormValue("search")
+  k := db.FindKotoba(u.Id, find, c)
+  var data HomeData
+  data.Count = len(*k)
+  if data.Count > 20 {
+    data.First = (*k)[0:20]
+    data.More = 1 // print X more
+  } else {
+    data.First = (*k)
+  }
+  fmt.Println(data.Count)
+  r.HTML(200, HOME_TEMPLATE, data)
+}
+func ShowKotoba(params martini.Params, r render.Render, u *db.MongoUser, c *mgo.Collection) {
+  id := params["id"]
+  k := db.GetKotoba(bson.ObjectIdHex(id), c)
+  r.HTML(200, TEMPLATE_SHOW, k)
+}
+func EditKotoba(params martini.Params, r render.Render, u *db.MongoUser, c *mgo.Collection) {
+  id := params["id"]
+  k := db.GetKotoba(bson.ObjectIdHex(id), c)
+  r.HTML(200, TEMPLATE_EDIT, k)
+}
+func DoReviews(r render.Render, u *db.MongoUser, c *mgo.Collection) {
+  k := db.GetRandomKotoba(u.Id, c)
+  var data ReviewData
+  if k != nil {
+    data.Valid = 0
+    data.Kotoba = *k
+  } else {
+    data.Valid = 1
+    k = db.GetNextKotoba(u.Id, c)
+    data.ReviewUntil = TimeUntil(k.Review)
+  }
+  r.HTML(200, REVIEW_TEMPLATE, data)
+}
+func AddKotoba(rw http.ResponseWriter, r *http.Request, u *db.MongoUser, c *mgo.Collection) {
+  word, hatsuon, hatsuon_, imi, imi_ := r.FormValue("word"), r.FormValue("hatsuon"), r.FormValue("hatsuon_"), r.FormValue("imi"), r.FormValue("imi_")
+  label := r.FormValue("label")
+  diff, _ := strconv.Atoi(r.FormValue("diff"))
+  _, err := db.SaveNewKotoba(u.Id, word, label, diff, hatsuon, hatsuon_ , imi, imi_, c)
+  if err != nil {
+    fmt.Println(err)
+    http.Redirect(rw, r, PAGE_ERROR, http.StatusFound)
+  }
+  http.Redirect(rw, r, FUNC_HOME, http.StatusFound)
+}
+func SaveEditKotoba(rw http.ResponseWriter, r *http.Request, params martini.Params, u *db.MongoUser, c *mgo.Collection) {
+  word, hatsuon, hatsuon_, imi, imi_ := r.FormValue("word"), r.FormValue("hatsuon"), r.FormValue("hatsuon_"), r.FormValue("imi"), r.FormValue("imi_")
+  label := r.FormValue("label")
+  diff, _ := strconv.Atoi(r.FormValue("diff"))
+  id := r.FormValue("word_id")
+  _, err := db.SaveEditKotoba(id, word, label, diff, hatsuon, hatsuon_ , imi, imi_, c)
+  if err != nil {
+    fmt.Println(err)
+    http.Redirect(rw, r, PAGE_ERROR, http.StatusFound)
+  }
+  http.Redirect(rw, r, FUNC_KOTOBA + id, http.StatusFound)
+}
+
+func CheckReview(params martini.Params, rw http.ResponseWriter, r *http.Request, u *db.MongoUser, c *mgo.Collection) {
+  checked := r.FormValue("checked")
+  id := params["id"]
+  if checked == "true" {
+    db.ReviewUpdateKotoba(id, true, c)
+  } else {
+    db.ReviewUpdateKotoba(id, false, c)
+  }
+  http.Redirect(rw, r, PAGE_REVIEW, http.StatusFound)
+}
+func ShowStats(r render.Render, u *db.MongoUser, 
+                c *mgo.Collection) {
+  stats := StatsData{}
+  stats.ReviewsNow = db.GetNumberReviewsNow(u.Id, c)
+  stats.ReviewsHour = db.GetNumberReviewsHour(u.Id, c)
+  stats.ReviewsDay = db.GetNumberReviewsDay(u.Id, c)
+  stats.Beginner = db.GetNumberBeginner(u.Id, c)
+  stats.Elementary = db.GetNumberElementary(u.Id, c)
+  stats.Intermediate = db.GetNumberIntermediate(u.Id, c)
+  stats.Master = db.GetNumberMaster(u.Id, c)
+  stats.Known = db.GetNumberKnown(u.Id, c)
+  r.HTML(200, TEMPLATE_STATS, stats)
+}
+
+// remove everything behind this point later!

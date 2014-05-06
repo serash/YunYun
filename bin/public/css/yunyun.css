@@ -7,13 +7,48 @@ p {
   padding-bottom: 10px;
   font-size: 18px; 
 }
+.l-begin {
+  background-color: #F7464A;
+}
+.l-elem {
+  background-color: #F38630;
+}
+.l-inter {
+  background-color: #F0E68C;
+}
+.l-master {
+  background-color: #48D1CC;
+}
+.l-known {
+  background-color: #69D2E7;
+}
+.ch-text {
+  font-family: arial, 黑体, 微软雅黑, 宋体, sans-serif;
+}
 .table-hr {
   margin: 0; 
+}
+.kanji {
+  font-size: 90px;
+}
+.navbar-form .input-group-btn,
+.navbar-form .input-group-addon {
+width: auto;
+}
+.lvl-type {
+  padding: 0;
+  font-size: 18px;
 }
 .yy-type {
   padding: 0;
   font-size: 18px; 
   color: #A0A0A0;
+}
+.hidden-piechart {
+  display:none;
+}
+.hidden-id-form {
+  display:none;
 }
 .hidden-review-info {
    display:none;
@@ -26,21 +61,45 @@ p {
   font-size: 24px; 
 }
 .showinfo-button {
-  left: 50%;
   border: 0;
   background: 0; 
-  font-size: 14px; 
-  color: #A0A0A0;
+  font-size: 18px; 
+  color: DodgerBlue;
 }
+.bitoff-span {
+  border: 0;
+  background: 0; 
+  font-size: 18px; 
+  color: Coral ;
+}
+.search-button {
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background: 0; 
+}
+.search-addon  {
+  background-color: DodgerBlue;
+}  
+.review-addon  {
+  background-color: DodgerBlue;
+}  
 .review-button {
   margin: 0;
   border: 0;
   padding: 0;
   background: 0; 
-  font-size: 24px; 
+  font-size: 18px; 
+}
+
+.form-add {
+  position: relative;
+  max-width: 500px;
+  padding: 15px;
+  margin: 0 auto;
 }
 .form-signin {
-  max-width: 330px;
+  max-width: 300px;
   padding: 15px;
   margin: 0 auto;
 }

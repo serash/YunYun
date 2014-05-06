@@ -2,10 +2,22 @@ package auth
 
 import (
   "fmt"
-  "strconv"
-  "database/sql"
-  _ "github.com/go-sql-driver/mysql"
+  //"time"
+  "net/http"
+  "github.com/go-martini/martini"
+  "github.com/martini-contrib/sessions"
+  "github.com/yunyun/db"
+  "labix.org/v2/mgo"
+  "labix.org/v2/mgo/bson"
   "code.google.com/p/go.crypto/bcrypt"
+)
+const (
+  PAGE_LOGIN = "/login/"
+  PAGE_ERROR = "/error/"
+  FUNC_LOGIN = "/login"
+  FUNC_LOGOUT = "/logout"    
+  FUNC_REGISTER = "/register"
+  FUNC_HOME = "/"
 )
 /* 
  * user functions
@@ -19,32 +31,55 @@ func Crypt(password []byte) ([]byte, error) {
     defer clear(password)
     return bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
 }
-func AddUser(db *sql.DB, user string, email string, pass string) (error) {
+func AddUser(db_ *mgo.Database, user string, email string, pass string) (error) {
   // insert user
   pwHash, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
-  if err != nil {
-      panic(err.Error()) // proper error handling instead of panic in your app
-  }
-  _, err = db.Exec("INSERT INTO users(user, email, pw_hash) VALUES(?, ?, ?)", user, email, pwHash)
-  return err
+  db.IfPanic(err)
+  return db.InsertUser(user, email, string(pwHash), db_)
 }
-func LoginUser(db *sql.DB, user string, pass string) (string, error)  {
+func LoginUser(db_ *mgo.Database, name string, pass string) (bson.ObjectId, error)  {
   // query user
-  var pwHash string
-  var id string
-  err := db.QueryRow("SELECT id, pw_hash FROM users WHERE (user = ? OR email = ?)", user, user).Scan(&id, &pwHash)
+  user, err := db.GetUser(name, db_)
   if err != nil {
-    fmt.Println("error getting user " + user)
+    fmt.Println("error getting user " + name)
     return "", err
   }
-  return id, bcrypt.CompareHashAndPassword([]byte(pwHash), []byte(pass))
+  return user.Id, bcrypt.CompareHashAndPassword([]byte(user.Pw_hash), []byte(pass))
 }
-
-func GetUser(db *sql.DB, user interface{}) (int, string, string, error) {
-  var name string
-  var email string
-  var id_ string
-  err := db.QueryRow("SELECT id, user, email from users where id=?", user).Scan(&id_, &name, &email)
-  id, _ := strconv.Atoi(id_)
-  return id, name, email, err
+/*
+ * Web functions
+ */
+func RequireLogin(rw http.ResponseWriter, req *http.Request, s sessions.Session,  
+                  db_ *mgo.Database, c martini.Context) {
+  user, err := db.GetUserById(bson.ObjectIdHex(s.Get("userId").(string)), db_)
+  if err != nil {
+    fmt.Println(err)
+    http.Redirect(rw, req, PAGE_LOGIN, http.StatusFound)
+    return
+  }
+  c.Map(user)
+}
+func Register(rw http.ResponseWriter, r *http.Request, db_ *mgo.Database) {
+  name, email, password := r.FormValue("name"), r.FormValue("email"), r.FormValue("password")
+  
+  err := AddUser(db_, name, email, password)
+  if err != nil {
+    fmt.Println(err)
+    http.Redirect(rw, r, PAGE_ERROR, http.StatusFound)
+  }
+  http.Redirect(rw, r, PAGE_LOGIN, http.StatusFound)
+}
+func Logout(rw http.ResponseWriter, req *http.Request, s sessions.Session) {
+  s.Delete("userId")
+  http.Redirect(rw, req, PAGE_LOGIN, http.StatusFound)
+}
+func PostLogin(rw http.ResponseWriter, req *http.Request, db_ *mgo.Database, s sessions.Session) {
+  user, pass := req.FormValue("email"), req.FormValue("password")
+  id, err := LoginUser(db_, user, pass)
+  if err != nil {
+    fmt.Println(err)
+    http.Redirect(rw, req, PAGE_LOGIN, http.StatusFound)
+  }
+  s.Set("userId", id.Hex())
+  http.Redirect(rw, req, FUNC_HOME, http.StatusFound)
 }

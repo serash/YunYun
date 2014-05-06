@@ -1,0 +1,91 @@
+<table class="table">
+  <tr>
+    <td class="col-lg-4">         
+      <div class="yy-type" >
+        Reviews available now 
+      </div>
+      <hr class="table-hr">
+      <h3> 
+        {{ .ReviewsNow }}
+      </h3>  
+    </td>
+    <td class="col-lg-4">         
+      <div class="yy-type" >
+        Reviews next hour 
+      </div>
+      <hr class="table-hr">
+      <h3> 
+        {{ .ReviewsHour }}
+      </h3>  
+    </td>
+    <td class="col-lg-4">         
+      <div class="yy-type" >
+        Reviews next day
+      </div>
+      <hr class="table-hr">
+      <h3> 
+        {{ .ReviewsDay }}
+      </h3>  
+    </td>
+  </tr>
+</table>
+<table class="table">
+  <tr>
+    <td class="col-lg-2 l-begin"> 
+      <div class="lvl-type" >
+        Beginner 
+      </div>
+      <hr class="table-hr">
+      <h3> 
+        {{ .Beginner }}
+      </h3>  
+    </td>
+    <td class="col-lg-2 l-elem"> 
+      <div class="lvl-type" >
+        Elementary 
+      </div>
+      <hr class="table-hr">
+      <h3> 
+        {{ .Elementary }}
+      </h3>  
+    </td>
+    <td class="col-lg-2 l-inter"> 
+      <div class="lvl-type" >
+        Intermediate
+      </div>
+      <hr class="table-hr">
+      <h3> 
+        {{ .Intermediate }}
+      </h3>  
+    </td>
+    <td class="col-lg-2  l-master"> 
+      <div class="lvl-type">
+        Master 
+      </div>
+      <hr class="table-hr">
+      <h3> 
+        {{ .Master }}
+      </h3>  
+    </td>
+    <td class="col-lg-2 l-known"> 
+      <div class="lvl-type">
+        Known 
+      </div>
+      <hr class="table-hr">
+      <h3> 
+        {{ .Known }}
+      </h3>  
+    </td>
+  </tr>
+</table>
+<button id="chartbutton" title="Show level piechart"
+          class="btn btn-primary" onClick="statsChart( {{ . }} )">
+  <span class="glyphicon glyphicon-stats"></span> </button>
+<div class="row-fluid">
+  <div id="levelchart" class="col-lg-6">
+    <canvas id="levelPiechart"  class="hidden-piechart">
+    </canvas>
+  </div>
+  <div id="levelchart" class="col-lg-6">
+  </div>
+</div>

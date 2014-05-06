@@ -9,16 +9,25 @@
           <th><h3><span class="glyphicon glyphicon-time"></span> Review</h3></th>
         </tr>
       </thead>
-      {{range .}}
+      {{range .First}}
       <!-- Kotoba entry -->
       <tr>
-        <td><a href="/kotoba/{{ .Id }}"><h3>{{ .Goi }}</h3></a></td>
-        <td><h4>{{ .Hatsuon }}</h4> </td>
-        <td><h4>{{ .Imi }}</h4> </td>
+        <td><a href="/kotoba/{{ .Id.Hex }}"><h3 class="ch-text">{{ .Goi }}</h3></a></td>
+        <td><h4>
+          {{ range $i, $e := .Hatsuons }}{{if $i}}{{else}}{{ $e.Hatsuon }}{{end}} {{end}}
+        </h4> </td>
+        <td><h4>
+         {{ range $i, $e := .Imis }}{{if $i}}{{else}}{{ $e.Imi }}{{end}} {{end}}
+        </h4> </td>
         <td><h4>{{ .Review }}</h4></td>
       </tr>
       {{end}}
     </table>
+    {{if .More}}
+    <div class="col-lg-12 text-center">
+    <h3> There are {{ .Count }} words</h3>
+    </div>
+    {{end}}
   </div>
 <!--
   <div class="col-lg-4">

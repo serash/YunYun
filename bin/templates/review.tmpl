@@ -1,11 +1,17 @@
 <!-- 0 is true, any other is false -->
 {{if .Valid}}
 <h1> Congratulations! You have no more reviews at this time! :) </h1>
-<h1> Next review at {{ .Review }} </h1>
+<h1> Next review is in {{ .ReviewUntil }} </h1>
 {{else}}
+{{ with .Kotoba }}
 <div class="goi">
   <div class="col-lg-12 text-center">
-    <h1> {{ .Hatsuon }} </h1>
+    <h1 class="kanji ch-text"> {{ .Goi }} </h1>   
+    <h1>
+      {{range .Hatsuons}}
+      {{ .Hatsuon }}
+      {{end}} 
+    </h1>
   </div>
   <hr>
   <div class="col-lg-12 text-center">
@@ -13,22 +19,35 @@
   </div>
   <hr>
 </div>
-<form name="review" action="/reviewed/{{ .Id }}"  method="POST"
-      onsubmit="return checkReview({{ .Imi }})">
+<form name="review" action="/reviewed/{{ .Id.Hex }}"  method="POST"
+      onsubmit="return checkReview({{ .Imis }})">
   <div class="input-group col-lg-12">
     <input name="answer" class="review-input text-center" autocomplete="off" 
            placeholder="Answer" autofocus>
     <input name="checked" class="hidden-review-info" readonly 
            placeholder="check">
-    <span class="input-group-addon">
-      <input type="submit" class="review-button" value=">"/>
+    <span class="input-group-addon review-addon">
+      <button type="submit" class="review-button">
+         <span class="glyphicon  glyphicon-chevron-right"></span>
+      </button>
     </span>
   </div>
 </form>
 <!-- show more info if wrong -->
+<div  name="bitwrong" class="hidden-review-info col-lg-12 text-center">
+  <span title="The answer was a bit off"
+        class="text-center bitoff-span glyphicon glyphicon-exclamation-sign"></span>
+  <button type="button" title="Show more information"
+          class="text-center showinfo-button" 
+          onClick="showInfo()">
+    <span class="glyphicon glyphicon-info-sign"></span>
+  </button>
+</div>
 <div name="showinfobutton" class="hidden-review-info col-lg-12 text-center">
-  <button class="showinfo-button" onClick="showInfo()">
-    show extra information
+  <button name="showinfobutton" type="button" title="Show more information"
+          class="text-center showinfo-button" 
+          onClick="showInfo()">
+    <span class="glyphicon glyphicon-info-sign"></span>
   </button>
 </div>
 <div name="info" class="hidden-review-info">
@@ -39,7 +58,9 @@
           Reading 
         </div>
         <hr class="table-hr">
-        <h3> {{ .Hatsuon }} </h3>  
+        <h3> 
+         {{ range $i, $e := .Hatsuons }}{{if $i}},{{end}}{{ $e.Hatsuon }} {{end}}
+        </h3>  
       </td>
       <td class="col-lg-9"> 
         <div class="yy-type" >
@@ -55,7 +76,11 @@
           Meaning 
         </div>
         <hr class="table-hr">
-        <h3> {{ .Imi }} </h3>  
+        <h3>         
+          {{range .Imis}}
+          {{ .Imi }}
+          {{end}}
+        </h3>  
       </td>
       <td class="col-lg-9"> 
         <div class="yy-type" >
@@ -67,5 +92,5 @@
     </tr>
   </table>
 </div>
-
+{{end}}
 {{end}}

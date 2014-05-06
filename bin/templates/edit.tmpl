@@ -1,27 +1,20 @@
-<!--
-<div class="row">      
-  <form class="form-add col-lg-6" role="form" action="/add" method="POST">
-    <input type="text" name="word" class="form-control col-lg-12" autocomplete="off" placeholder="Word" autofocus>
-    <input name="hatsuon" class="form-control col-lg-6" autocomplete="off" placeholder="Reading">
-    <input type="text" class="form-control col-lg-6" name="hatsuon_" autocomplete="off"  placeholder="Reading extra info">
-    <input name="imi" class="form-control col-lg-6" autocomplete="off" placeholder="Meaning">
-    <input type="text" class="form-control col-lg-6" name="imi_" autocomplete="off"  placeholder="Meaning extra info">
-    <button class="col-lg-4 btn btn-lg btn-primary btn-block" type="submit">Add word</button>
-  </form>
-</div>
--->
-
-<form class="form-horizontal" role="form" action="/add" method="POST">
+<form class="form-horizontal" role="form" action="/edit" method="POST">
 <fieldset>
 
 <!-- Form Name -->
-<legend>Add word</legend>
-
+<legend>Edit word</legend>
+  
+<!-- hidden input that stores the id -->
+<div   class="hidden-id-form">
+  <input name="word_id" id="word_id" placeholder="Word" class="form-control input-md" value="{{ .Id.Hex }}" 
+         type="text">
+</div>
+  
 <!-- Text input-->
 <div class="form-group">
   <label class="col-md-3 control-label" for="word">Word</label>  
   <div class="col-md-5">
-  <input id="word" name="word" placeholder="Word" class="form-control input-md" required="" type="text">
+    <input id="word" name="word" placeholder="Word" class="form-control input-md" value="{{ .Goi }}" required="" type="text">
     
   </div>
 </div>
@@ -30,7 +23,9 @@
 <div class="form-group">
   <label class="col-md-3 control-label" for="hatsuon">Readings</label>  
   <div class="col-md-5">
-  <input id="hatsuon" name="hatsuon" placeholder="Reading1, Reading2, ..." class="form-control input-md" required="" type="text">
+    <input id="hatsuon" name="hatsuon" placeholder="Reading1, Reading2, ..." 
+           value="{{ range $i, $e := .Hatsuons }}{{if $i}},{{end}}{{ $e.Hatsuon }} {{end}}"
+           class="form-control input-md" required="" type="text">
     
   </div>
 </div>
@@ -39,7 +34,7 @@
 <div class="form-group">
   <label class="col-md-3 control-label" for="hatsuon_"></label>  
   <div class="col-md-5">
-  <input id="hatsuon_" name="hatsuon_" placeholder="Extra info" class="form-control input-md" type="text">
+  <input id="hatsuon_" name="hatsuon_" value="{{ .Hatsuon_ }}" placeholder="Extra info" class="form-control input-md" type="text">
     
   </div>
 </div>
@@ -48,7 +43,8 @@
 <div class="form-group">
   <label class="col-md-3 control-label" for="imi">Meanings</label>  
   <div class="col-md-5">
-  <input id="imi" name="imi" placeholder="Meaning1, Meaning2, ..." class="form-control input-md" required="" type="text">
+  <input id="imi" name="imi" placeholder="Meaning1, Meaning2, ..." 
+         value="{{ range $i, $e := .Imis }}{{if $i}},{{end}}{{ $e.Imi }} {{end}}" class="form-control input-md" required="" type="text">
     
   </div>
 </div>
@@ -57,7 +53,7 @@
 <div class="form-group">
   <label class="col-md-3 control-label" for="imi_"></label>  
   <div class="col-md-5">
-  <input id="imi_" name="imi_" placeholder="Extra info" class="form-control input-md" type="text">
+  <input id="imi_" name="imi_" placeholder="Extra info" value="{{ .Imi_ }}" class="form-control input-md" type="text">
     
   </div>
 </div>
@@ -66,7 +62,9 @@
 <div class="form-group">
   <label class="col-md-3 control-label" for="label">Labels</label>  
   <div class="col-md-5">
-  <input id="label" name="label" placeholder="Label1, Label2, ..." value="chinese" class="form-control input-md" type="text">
+  <input id="label" name="label" placeholder="Label1, Label2, ..." 
+         value="{{ range $i, $e := .Labels }}{{if $i}},{{end}}{{ $e.Label }} {{end}}"class="form-control input-md" type="text">
+    
   </div>
 </div>
 
@@ -101,7 +99,7 @@
 <div class="form-group">
   <label class="col-md-4 control-label" for="add"></label>
   <div class="col-md-4">
-    <button id="add" name="add" class="btn btn-primary">Add word</button>
+    <button id="add" name="add" class="btn btn-primary">Save word</button>
   </div>
 </div>
 
